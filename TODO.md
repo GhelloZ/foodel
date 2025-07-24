@@ -1,0 +1,31 @@
+# TODO List
+-[] Gestione profilo utente
+    -[] Registrazione con scelta di tipologia
+        -[] Ristoratore
+            -[] Numero di telefono
+            -[] Partita IVA
+            -[] Indirizzo
+            -[] Coordinate bancarie per ricevereil danaro e pagare la quota d'utilizzo
+        -[] Cliente
+            -[] Numero di telefono
+            -[] Indirizzo
+            -[] Metodo di pagamento
+    -[] Modifica dati personali
+    -[] Cancellazione profilo
+-[] Gestione ristorante/i
+    -[] Dettagli ristorante
+        -[] Nome
+        -[] Indirizzo
+        -[] Menu
+    -[] Piatti
+        -[] Nome
+        -[] Tipologia
+        -[] Prezzo
+        -[] Ingredienti
+        -[] Allergeni
+        -[] Foto illustrativa
+        -[] Possibilita di modificare tutti i dettagli dal ristoratore
+-[] Gestione ordini
+    -[] Smt idk
+-[] Gestione consegne
+    -[] Quando l'utente finale riceve l'ordine deve essere segnato consegnato
