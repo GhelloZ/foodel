@@ -23,7 +23,7 @@ app.use(cors());
  * }
  ******/
 
-app.post(`/auth/register`, (req,res) => {
+app.post(`/register`, (req,res) => {
 	let missingFields = 0;
 	console.log(req.body);
 	// Ogni check fallito imposta un bit su 1, poi il client controllera' i bit flippati per capire cosa manca
