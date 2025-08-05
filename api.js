@@ -4,15 +4,21 @@ const MongoClient = require('mongodb').MongoClient;
 const ObjectID = require('mongodb').ObjectId;
 const uuid    = require('uuid');
 const dotenv = require('dotenv').config();
+const bcrypt = require('bcrypt');
 
 const MongoUrl = process.env.MONGO_URL;
 const client = new MongoClient(MongoUrl);
 
 const app = express();
+
+// Constants imported from .env
 const port = process.env.PORT;
+const saltRounds = process.env.SALT_ROUNDS;
 
 app.use(express.json());
 app.use(cors());
+
+//TODO
 //app.use(checkApiKeys());
 
 /******
@@ -23,15 +29,20 @@ app.use(cors());
  * }
  ******/
 
-app.post('/register', (req,res) => {
+app.post('/register', async (req,res) => {
+	const emailRegex = /^[\w\-\.]+(\+[\w\-\.]+)?@([\w-]+\.)+[\w-]{2,}$/;
 	let missingFields = 0;
 	console.log(req.body);
-	// Ogni check fallito imposta un bit su 1, poi il client controllera' i bit flippati per capire cosa manca
+	// Ogni check fallito imposta un bit su 1, poi il client puo' controllare i bit flippati per capire cosa manca
+	// Each failed check flips a bit to 1, then the client can check what bits are flipped to see what's missing
 	if(req.body.email == null){ console.log('Missing field: email'); missingFields += 1 }       // 000000000001
+	else if(!emailRegex.test(req.body.email)){
+		console.log('Invalid field: email'); missingFields += 1
+	}
 	if(req.body.password == null){ console.log('Missing field: password'); missingFields += 2 } // 000000000010
-	if(req.body.type == null){ console.log('Missing field: type'); missingFields += 4 }         // 000000000100
+	if(req.body.restaurateur == null){ console.log('Missing check: restaurateur'); missingFields += 4 }         // 000000000100
 	else{
-		if(req.body.type == "ristoratore"){
+		if(req.body.restaurateur == true){
 			if(req.body.iva == null){ console.log('Missing field: iva'); missingFields += 8 }   // 000000001000
 			if(req.body.bankAccount == null){ console.log('Missing fields: bankAccount.*') ; missingFields += 48 } // 000000110000
 			else{
@@ -52,38 +63,86 @@ app.post('/register', (req,res) => {
 		if(req.body.paymentCard.expDate == null){ console.log('Missing field: paymentCard.expDate'); missingFields += 1024 } // 010000000000
 		if(req.body.paymentCard.cvv == null){ console.log('Missing field: paymentCard.cvv'); missingFields += 2048 }         // 100000000000
 	}
-	if(missingFields == 0){ res.status(201).send('User registered') }
-	else{ console.log(`Missing fields: ${missingFields.toString(2)}`); res.status(400).send(missingFields) }
-})
+	if(missingFields !== 0){ return res.status(400).send(missingFields); }
+
+	try {
+		await client.connect();
+		const db = client.db("foodel");
+		const users = db.collection("users");
+		const existingUser = await users.findOne({email: req.body.email});
+		if (existingUser){
+			console.log("Email already in use");
+			return res.status(409)
+		}
+
+		const hashedPassword = bcrypt.hash(req.body.password, saltRounds, function(err, hash){});
+
+		// User creation
+		if(req.body.restaurateur === true){
+			console.log('New retaureateur')
+			const newUser = {
+				email: req.body.email,
+				password: hashedPassword,
+				restaurateur: req.body.restaurateur,
+				iva: req.body.iva,
+				bankAccount: req.body.bankAccount,
+				address: req.body.address,
+				paymentCard: req.body.paymentCard
+			};
+			console.log(newUser);
+		} else {
+			console.log('New commoner')
+			const newUser = {
+				email: req.body.email,
+				password: hashedPassword,
+				restaurateur: req.body.restaurateur,
+				address: req.body.address,
+				paymentCard: req.body.paymentCard
+			};
+			console.log(newUser)
+		}
+
+		console.log(newUser);
+
+		//TODO: Insert into db
+		await users.insertOne(newUser);
+
+		await client.close();
+		res.status(201).send("User registered");
+	} catch (err) {
+		console.error("Error in /register:", err);
+		res.status(500).send("Server error");
+	}
+});
 
 app.post('/login', (req,res) => {
 	console.log(req.body);
 	if(req.body.email === 'mariorossi@gmail.de' && req.body.password === 'pene1234'){ console.log('user logged in'); res.status(200).send(`User logged in`) }
 	else{ console.log('wrong creds'); res.status(401).send(`Wrong credentials`) }
-})
+});
 
 app.get('/users/me', (req,res) => {
 	res.json({
 		"id": 1234,
 		"email": "mariorossi@gmail.de",
-		"type": "ristoratore",
+		"restaurateur": true,
 		"address": {
 			"street":"via Pascoli 4",
 			"city":"Ceriano Laghetto",
 			"zip":"20816"
 		}
 	}).status(200);
-})
+});
 
 app.delete('/users/me', (req,res) => {
 	res.status(423).send("Under development");
-})
+});
 
 app.get('/teapot', async (req,res) => {
 	console.log('/teapot test');
 	res.status(418).send('This is not a coffee machine');
-})
+});
 
 app.listen(port, () => {
 	console.log(`App listening on port ${port}`);
-})
+});
