@@ -23,7 +23,7 @@ app.use(cors());
  * }
  ******/
 
-app.post(`/register`, (req,res) => {
+app.post('/register', (req,res) => {
 	let missingFields = 0;
 	console.log(req.body);
 	// Ogni check fallito imposta un bit su 1, poi il client controllera' i bit flippati per capire cosa manca
@@ -54,6 +54,29 @@ app.post(`/register`, (req,res) => {
 	}
 	if(missingFields == 0){ res.status(201).send('User registered') }
 	else{ console.log(`Missing fields: ${missingFields.toString(2)}`); res.status(400).send(missingFields) }
+})
+
+app.post('/login', (req,res) => {
+	console.log(req.body);
+	if(req.body.email === 'mariorossi@gmail.de' && req.body.password === 'pene1234'){ console.log('user logged in'); res.status(200).send(`User logged in`) }
+	else{ console.log('wrong creds'); res.status(401).send(`Wrong credentials`) }
+})
+
+app.get('/users/me', (req,res) => {
+	res.json({
+		"id": 1234,
+		"email": "mariorossi@gmail.de",
+		"type": "ristoratore",
+		"address": {
+			"street":"via Pascoli 4",
+			"city":"Ceriano Laghetto",
+			"zip":"20816"
+		}
+	}).status(200);
+})
+
+app.delete('/users/me', (req,res) => {
+	res.status(423).send("Under development");
 })
 
 app.get('/teapot', async (req,res) => {
