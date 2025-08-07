@@ -32,7 +32,6 @@ app.use(cors());
 app.post('/register', async (req,res) => {
 	const emailRegex = /^[\w\-\.]+(\+[\w\-\.]+)?@([\w-]+\.)+[\w-]{2,}$/;
 	let missingFields = 0;
-	console.log(req.body);
 	// Ogni check fallito imposta un bit su 1, poi il client puo' controllare i bit flippati per capire cosa manca
 	// Each failed check flips a bit to 1, then the client can check what bits are flipped to see what's missing
 	if(req.body.email == null){ console.log('Missing field: email'); missingFields += 1 }       // 000000000001
@@ -66,21 +65,39 @@ app.post('/register', async (req,res) => {
 	if(missingFields !== 0){ return res.status(400).send(missingFields); }
 
 	try {
+		// Connecting to db
 		await client.connect();
 		const db = client.db("foodel");
 		const users = db.collection("users");
+		console.log('db connected');
+
+		// Dupes check
 		const existingUser = await users.findOne({email: req.body.email});
 		if (existingUser){
-			console.log("Email already in use");
-			return res.status(409)
+			console.log(`existingUser: ${existingUser.email}`)
+			return res.status(409).send('Email already in use');
 		}
 
-		const hashedPassword = bcrypt.hash(req.body.password, saltRounds, function(err, hash){});
+		// Password hashing and user creation
+		let newUser = {};
+		let hashedPassword;
+
+		await bcrypt.genSalt(saltRounds, function(err,salt){
+			console.log(`salt: ${salt}`);
+			console.log(`non hashed password: ${req.body.password}`)
+			bcrypt.hash(req.body.password, salt, function(err,hash){
+				console.log(`hash: ${hash}`);
+				hashedPassword = hash;
+				console.log(`hashed pw: ${hashedPassword}`);
+			});
+		});
+		console.log(`hashed pw outside func: ${hashedPassword}`);
 
 		// User creation
 		if(req.body.restaurateur === true){
 			console.log('New retaureateur')
-			const newUser = {
+			newUser = {
+
 				email: req.body.email,
 				password: hashedPassword,
 				restaurateur: req.body.restaurateur,
@@ -89,20 +106,18 @@ app.post('/register', async (req,res) => {
 				address: req.body.address,
 				paymentCard: req.body.paymentCard
 			};
-			console.log(newUser);
 		} else {
 			console.log('New commoner')
-			const newUser = {
+			newUser = {
 				email: req.body.email,
 				password: hashedPassword,
 				restaurateur: req.body.restaurateur,
 				address: req.body.address,
 				paymentCard: req.body.paymentCard
 			};
-			console.log(newUser)
 		}
 
-		console.log(newUser);
+		console.log(`newUser.password: ${newUser.password}`);
 
 		//TODO: Insert into db
 		await users.insertOne(newUser);
