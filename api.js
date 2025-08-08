@@ -81,29 +81,13 @@ app.post('/register', async (req,res) => {
 		// Password hashing and user creation
 		let newUser = {};
 
-		/*
-		await bcrypt.genSalt(saltRounds, function(err,salt){
-			console.log(`salt: ${salt}`);
-			console.log(`non hashed password: ${req.body.password}`)
-			bcrypt.hash(req.body.password, salt, function(err,hash){
-				console.log(`hash: ${hash}`);
-				hashedPassword = hash;
-				console.log(`hashed pw: ${hashedPassword}`);
-			});
-		});
-		console.log(`hashed pw outside func: ${hashedPassword}`);
-		*/
-
-		console.log(`saltRounds: ${saltRounds}`)
 		const salt = await bcrypt.genSalt(saltRounds);
-		console.log(`salt: ${salt}`);
-		console.log(`plain pw: ${req.body.password}`);
 		const hashedPassword = await bcrypt.hash(req.body.password, salt);
-		console.log(`hashed pw: ${hashedPassword}`)
+		// console.log(`hashed pw: ${hashedPassword}`)
 
 		// User creation
 		if(req.body.restaurateur === true){
-			console.log('New retaureateur')
+			console.log('New restaureateur')
 			newUser = {
 
 				email: req.body.email,
@@ -125,9 +109,9 @@ app.post('/register', async (req,res) => {
 			};
 		}
 
-		console.log(`newUser.password: ${newUser.password}`);
+		// console.log(`newUser.password: ${newUser.password}`);
 
-		//TODO: Insert into db
+		// Insert into db
 		await users.insertOne(newUser);
 
 		await client.close();
