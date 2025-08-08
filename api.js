@@ -82,6 +82,8 @@ app.post('/register', async (req,res) => {
 		let newUser = {};
 		let hashedPassword;
 
+		// vsbertb
+		// bsrthfgxbf
 		await bcrypt.genSalt(saltRounds, function(err,salt){
 			console.log(`salt: ${salt}`);
 			console.log(`non hashed password: ${req.body.password}`)
