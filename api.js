@@ -12,8 +12,8 @@ const client = new MongoClient(MongoUrl);
 const app = express();
 
 // Constants imported from .env
-const port = process.env.PORT;
-const saltRounds = process.env.SALT_ROUNDS;
+const port = Number(process.env.PORT) || 3000;
+const saltRounds = Number(process.env.SALT_ROUNDS) || 10;
 
 app.use(express.json());
 app.use(cors());
@@ -80,9 +80,8 @@ app.post('/register', async (req,res) => {
 
 		// Password hashing and user creation
 		let newUser = {};
-		let hashedPassword;
 
-		// vsbertb
+		/*
 		await bcrypt.genSalt(saltRounds, function(err,salt){
 			console.log(`salt: ${salt}`);
 			console.log(`non hashed password: ${req.body.password}`)
@@ -93,6 +92,14 @@ app.post('/register', async (req,res) => {
 			});
 		});
 		console.log(`hashed pw outside func: ${hashedPassword}`);
+		*/
+
+		console.log(`saltRounds: ${saltRounds}`)
+		const salt = await bcrypt.genSalt(saltRounds);
+		console.log(`salt: ${salt}`);
+		console.log(`plain pw: ${req.body.password}`);
+		const hashedPassword = await bcrypt.hash(req.body.password, salt);
+		console.log(`hashed pw: ${hashedPassword}`)
 
 		// User creation
 		if(req.body.restaurateur === true){
