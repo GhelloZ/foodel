@@ -2,9 +2,9 @@ const express = require('express');
 const cors    = require('cors');
 const MongoClient = require('mongodb').MongoClient;
 const ObjectID = require('mongodb').ObjectId;
-const uuid    = require('uuid');
 const dotenv = require('dotenv').config();
 const bcrypt = require('bcrypt');
+const jwt    = require('jsonwebtoken');
 
 const MongoUrl = process.env.MONGO_URL;
 const client = new MongoClient(MongoUrl);
@@ -122,10 +122,47 @@ app.post('/register', async (req,res) => {
 	}
 });
 
-app.post('/login', (req,res) => {
-	console.log(req.body);
-	if(req.body.email === 'mariorossi@gmail.de' && req.body.password === 'pene1234'){ console.log('user logged in'); res.status(200).send(`User logged in`) }
-	else{ console.log('wrong creds'); res.status(401).send(`Wrong credentials`) }
+app.post('/login', async (req,res) => {
+	const { email, password } = req.body;
+
+	try{
+		// Connection to DB
+		await client.connect();
+		const db = client.db("foodel");
+		const users = db.collection("users");
+
+		// Checking if the user exists
+		const user = await users.findOne({ email });
+		if (!user) {
+			console.log("User not found");
+			return res.status(401).send("Invalid credentials");
+		}
+
+		// Password check
+		const passwordMatch = await bcrypt.compare(password, user.password);
+		if(!passwordMatch) {
+			console.log("Invalid password");
+			return res.status(401).send("Invalid credentials");
+		}
+
+		// JWT
+		const payload = {
+			email: user.email,
+			id: user._id,
+			restaurateur: user.restaurateur
+		};
+
+		// Signing
+		const token = jwt.sign(payload, process.env.JWT_SECRET, {
+			expiresIn: '30m'
+		});
+
+		console.log('User logged in: ', email);
+		res.status(200).json({ token });
+	} catch(err){
+		console.error("Error in /login: ", err);
+		res.status(500).send("Server error");
+	}
 });
 
 app.get('/users/me', (req,res) => {
